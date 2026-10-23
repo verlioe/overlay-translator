@@ -78,6 +78,16 @@ class ChatAccessibilityService : AccessibilityService() {
 
         val now = SystemClock.uptimeMillis()
         if (pendingPackage != sourcePackage) {
+            // 換 App 的瞬間先把懸浮層清乾淨，不要等去抖動。
+            //
+            // 為什麼會慢：新畫面的無障礙事件（進場動畫、時鐘跳秒…）會一直把 450ms 的
+            // 計時器往後推，最多拖到 MAX_SETTLE_MS（2 秒）。實機量到「按 Home 之後
+            // 2.1 秒圓點才不見」。這裡直接發一張空快照讓懸浮層立刻收掉；
+            // 真正的內容仍然等去抖動結束後才抓，不影響擷取準確度。
+            publishEmptyScreen(
+                sourcePackage,
+                reason = "換到 $sourcePackage：先清掉上一個畫面的圓點",
+            )
             pendingPackage = sourcePackage
             pendingSince = now
         }
@@ -168,12 +178,15 @@ class ChatAccessibilityService : AccessibilityService() {
      * 只在上一份不是空的時才送（用 [EMPTY_SIGNATURE] 記住），
      * 免得每個無障礙事件都重發一次、白白重畫。
      */
-    private fun publishEmptyScreen(sourcePackage: String) {
+    private fun publishEmptyScreen(
+        sourcePackage: String,
+        reason: String = "跳過自己的畫面（$sourcePackage）：清掉殘留的譯文",
+    ) {
         pendingPackage = null
         handler.removeCallbacks(captureRunnable)
         if (lastSignature == EMPTY_SIGNATURE) return
         lastSignature = EMPTY_SIGNATURE
-        AppLog.d(TAG, "跳過自己的畫面（$sourcePackage）：清掉殘留的譯文")
+        AppLog.d(TAG, reason)
         A11yBridge.publish(
             ScreenSnapshot(
                 packageName = sourcePackage,
