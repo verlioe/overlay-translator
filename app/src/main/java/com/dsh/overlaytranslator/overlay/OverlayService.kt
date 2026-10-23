@@ -115,6 +115,9 @@ class OverlayService : Service(), OverlayPanelListener {
     /** 目前開著譯文視窗的訊息 key（null＝沒開）。一次只開一則。 */
     private var openMessageKey: String? = null
 
+    /** 上一次真的畫出圓點的套件；用來判斷「空擷取」是收尾還是過渡。 */
+    private var lastRenderedPackage: String? = null
+
     /** 「我的輸入」視窗目前顯示的是譯文還是診斷。 */
     private var composerShowDiagnosis = false
 
@@ -700,6 +703,19 @@ class OverlayService : Service(), OverlayPanelListener {
         val screen = screenSize()
         chipManager.setScreenSize(screen.x, screen.y)
 
+        // 捲動中的「空擷取」不要理它。
+        //
+        // Messenger（Compose）快速滑動時，某些瞬間無障礙樹上完全抓不到訊息 ——
+        // 那不是「聊天畫面結束」，只是抓到了過渡狀態。以前這會讓下面的
+        // looksLikeChatScreen 判定失敗 → hideAll() → 圓點全部消失再出現，
+        // 使用者的感受就是「圓點跟不上、一閃一閃」。
+        // 同一個 App 內就沿用上一輪的結果，下一次成功的擷取會馬上更新。
+        if (snapshot.packageName == lastRenderedPackage &&
+            snapshot.incoming.none { it.bounds.isValid }
+        ) {
+            return
+        }
+
         // 告訴 chip 管理員「畫面上哪些地方是文字」。譯文在決定位置時會避開這些矩形，
         // 這是「不擋到原字」唯一的可靠依據，所以每次畫面更新都要重新給一次
         // （使用者一捲動，這些座標就全變了）。
@@ -817,6 +833,9 @@ class OverlayService : Service(), OverlayPanelListener {
                 startInlineTranslation(key, line.text, Direction.THEIR_TEXT_TO_ME, packageName)
             }
         }
+
+        // 有畫出東西才記錄套件 —— 用來判斷下一次的「空擷取」是不是過渡狀態。
+        if (seen.isNotEmpty()) lastRenderedPackage = packageName
 
         // 開著視窗的那則訊息若已經捲出畫面，順手把視窗關掉
         if (openMessageKey != null && openMessageKey !in seen) openMessageKey = null

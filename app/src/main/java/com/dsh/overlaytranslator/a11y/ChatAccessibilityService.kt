@@ -39,6 +39,18 @@ class ChatAccessibilityService : AccessibilityService() {
     private var pendingSince = 0L
 
     /**
+     * 上一次擷取到的「訊息文字 → 上緣 y」。
+     *
+     * 為什麼需要它？Messenger 是 Compose 寫的，捲動時**不一定會送 `TYPE_VIEW_SCROLLED`**
+     * （實測：用事件類型判斷捲動，Messenger 完全抓不到，圓點就跟不上）。
+     * 所以改成用「同一段文字的位置有沒有移動」來判斷捲動 —— 這跟 App 用什麼框架無關。
+     */
+    private var lastLineTops: Map<String, Int> = emptyMap()
+
+    /** 最近一次「偵測到捲動」的時間（uptimeMillis）。 */
+    private var scrollDetectedAt = 0L
+
+    /**
      * 上一次發佈出去的畫面「簽章」。
      *
      * 為什麼需要它？因為譯文 chip 本身也是 App 的視窗，它出現/移動時又會產生新的
@@ -83,8 +95,12 @@ class ChatAccessibilityService : AccessibilityService() {
         // 會一直把計時器往後推（最多 2 秒）。120ms 已經足夠避開「動畫中途」的殘缺節點。
         // 捲動期間另外把 [A11yBridge.scrollingRecently] 設起來，讓懸浮層不要在這段時間
         // 開始新的翻譯（快速滑過十幾則訊息不該燒十幾次 API）。
-        val isScroll = safeEvent.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED
-        if (isScroll) {
+        val isScrollEvent = safeEvent.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED
+        // Compose 寫的 App（Messenger）捲動時不一定送 TYPE_VIEW_SCROLLED，
+        // 所以再加上「最近有沒有偵測到訊息位置移動」。
+        val isScroll = isScrollEvent ||
+            (scrollDetectedAt > 0L && SystemClock.uptimeMillis() - scrollDetectedAt < SCROLL_DETECT_MS)
+        if (isScrollEvent) {
             A11yBridge.scrollingRecently = true
             handler.removeCallbacks(scrollIdleRunnable)
             handler.postDelayed(scrollIdleRunnable, SCROLL_IDLE_MS)
@@ -157,6 +173,24 @@ class ChatAccessibilityService : AccessibilityService() {
         // 不是聊天內容（實測「返回」「示範對話」會被當成訊息翻出來）。
         val topChromeBottom = statusBarHeight() + dp(56f)
         val snapshot = ScreenTextExtractor.extract(root, sourcePackage, topChromeBottom)
+        // 用「同一段訊息的位置有沒有變」判斷使用者正在捲動（見 lastLineTops 的說明）。
+        // 偵測到就進入「快速模式」SCROLL_DETECT_MS，並把 scrollingRecently 設起來，
+        // 讓懸浮層在捲動期間不要開始新的翻譯。
+        val currentTops = snapshot.incoming
+            .filter { it.bounds.isValid }
+            .associate { it.text to it.bounds.top }
+        val moved = currentTops.any { (text, top) ->
+            val previous = lastLineTops[text]
+            previous != null && previous != top
+        }
+        if (moved) {
+            scrollDetectedAt = SystemClock.uptimeMillis()
+            A11yBridge.scrollingRecently = true
+            handler.removeCallbacks(scrollIdleRunnable)
+            handler.postDelayed(scrollIdleRunnable, SCROLL_IDLE_MS)
+        }
+        lastLineTops = currentTops
+
         if (!snapshot.hasAnything) {
             lastSignature = null
             return
@@ -344,6 +378,9 @@ class ChatAccessibilityService : AccessibilityService() {
 
     /** 捲動事件停止多久之後算「手停了」，可以開始翻譯。 */
     private const val SCROLL_IDLE_MS = 450L
+
+    /** 偵測到訊息位移後，維持「快速模式」多久。 */
+    private const val SCROLL_DETECT_MS = 600L
 
         /** 不論如何，最多等這麼久就一定截一次。 */
         private const val MAX_SETTLE_MS = 2000L
