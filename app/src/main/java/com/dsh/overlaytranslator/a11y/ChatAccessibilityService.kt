@@ -140,13 +140,20 @@ class ChatAccessibilityService : AccessibilityService() {
         if (signature == lastSignature) return
         lastSignature = signature
 
+        // 只記「幾行」與「方向統計」，**不記訊息內容**。
+        // 早期除錯時這裡會把每一列的開頭／結尾片段印出來（對抓 TG／Messenger 的節點問題很有用，
+        // 但那同時也把使用者的訊息寫進 logcat）。正式版只留統計數字：
+        // 出問題時仍看得出「擷取到幾行、幾列貼左邊、幾列貼右邊」。
+        val edgeStats = snapshot.incoming
+            .groupingBy { it.dotEdge }
+            .eachCount()
+            .entries
+            .joinToString(" ") { "${it.key}=${it.value}" }
         AppLog.d(
             TAG,
-            "擷取 $sourcePackage：候選 ${snapshot.incoming.size} 行，輸入框${if (snapshot.composer.isBlank()) "空" else "${snapshot.composer.length} 字"}" +
-                snapshot.incoming.joinToString("") { line ->
-                    val tail = line.text.split('\n').last().take(18)
-                    "\n    y=${line.bounds.top} w=${line.bounds.width} edge=${line.dotEdge} len=${line.text.length} 尾=「$tail」"
-                },
+            "擷取 $sourcePackage：候選 ${snapshot.incoming.size} 行，輸入框" +
+                "${if (snapshot.composer.isBlank()) "空" else "${snapshot.composer.length} 字"}" +
+                (if (edgeStats.isEmpty()) "" else "，方向 $edgeStats"),
         )
         A11yBridge.publish(snapshot)
     }
