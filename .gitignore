@@ -1,0 +1,29 @@
+# ---- Android / Gradle ----
+.gradle/
+build/
+app/build/
+captures/
+.kotlin/
+local.properties
+*.iml
+.idea/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# ---- 本機／私人資料（絕對不要上傳）----
+# artifacts/ 內含實機截圖、uiautomator dump、session log —— 都是真實對話內容
+artifacts/
+# 交接文件與內部筆記：含裝置序號、真實對話細節
+HANDOVER.md
+NOTES-internal.md
+
+# ---- Python 工具產物 ----
+__pycache__/
+*.pyc
+
+# ---- OS ----
+Thumbs.db
+.DS_Store
+desktop.ini

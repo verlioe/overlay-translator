@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 懸浮窗（在其他 App 上顯示） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 前景服務 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 前景服務的常駐通知（Android 13+） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 呼叫 DeepSeek API -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".TranslatorApp"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.OverlayTranslator">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.OverlayTranslator">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            內建的「示範對話」。用真的 EditText 與訊息氣泡模擬一個聊天 App，
+            讓整條流程（讀取 → 翻譯 → 寫回）可以測試，而不必把真實對話暴露出來。
+
+            exported="true" 是刻意的：這是純測試畫面，不含任何使用者資料，
+            開放外部啟動讓自動化測試可以直接開啟它
+            （adb shell am start -n com.dsh.overlaytranslator/.ui.DemoChatActivity），
+            不必再用 uiautomator 點按，也就少一個測試變數。
+        -->
+        <activity
+            android:name=".ui.DemoChatActivity"
+            android:exported="true"
+            android:label="示範對話"
+            android:theme="@style/Theme.OverlayTranslator" />
+
+        <!-- 懸浮窗前景服務 -->
+        <service
+            android:name=".overlay.OverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating translation overlay: shows translations of chat messages on top of other apps while the user is chatting." />
+        </service>
+
+        <!--
+            無障礙服務：這是本 App 唯一的畫面文字來源。
+            注意：我們刻意「不」宣告 android:isAccessibilityTool="true"，
+            因為本服務的目的不是輔助身心障礙使用者，誠實宣告為 false 才符合 Google 政策。
+        -->
+        <service
+            android:name=".a11y.ChatAccessibilityService"
+            android:exported="true"
+            android:label="@string/a11y_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+    </application>
+
+</manifest>

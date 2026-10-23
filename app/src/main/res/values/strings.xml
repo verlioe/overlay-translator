@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">懸浮翻譯</string>
+
+    <string name="a11y_service_label">懸浮翻譯：讀取聊天文字</string>
+    <string name="a11y_service_summary">讀取聊天 App 畫面中的文字，以便翻譯</string>
+    <string name="a11y_service_description">開啟後，懸浮翻譯才能讀取其他聊天 App 畫面上的訊息文字，並把譯文顯示在懸浮窗中。本服務只在本機讀取畫面上的文字，且只在你於設定中允許的 App 中運作。文字會在你按下翻譯時才傳送到你自行設定的翻譯服務。</string>
+
+    <string name="notif_channel_name">懸浮翻譯常駐通知</string>
+    <string name="notif_channel_description">顯示懸浮翻譯正在運作</string>
+    <string name="notif_title">懸浮翻譯運作中</string>
+    <string name="notif_text">點一下可開啟懸浮面板</string>
+    <string name="notif_action_open">開啟面板</string>
+    <string name="notif_action_stop">停止</string>
+</resources>

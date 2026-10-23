@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    無障礙服務設定。
+
+    canRetrieveWindowContent = true 是核心：沒有它就拿不到其他 App 的畫面節點。
+    flagReportViewIds         讓節點帶有 viewIdResourceName，我們才能用資源 ID 過濾出「訊息」與「輸入框」。
+    flagIncludeNotImportantViews 讓被標記為 unimportantForAccessibility 的節點也能被讀到
+                              （不少聊天 App 的訊息泡泡就是這樣）。
+
+    notificationTimeout 設小一點以降低延遲；服務本身另有 450ms 的靜止去抖動。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewTextChanged|typeViewFocused|typeViewScrolled"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows|flagReportViewIds|flagIncludeNotImportantViews"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/a11y_service_description"
+    android:notificationTimeout="150"
+    android:summary="@string/a11y_service_summary" />

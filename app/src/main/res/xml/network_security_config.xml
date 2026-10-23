@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    網路安全設定。
+
+    ## 為什麼需要這個檔案
+
+    Android 從 API 28（Android 9）開始**預設禁止明文 HTTP**，
+    任何 http:// 連線都會被系統擋掉並丟出：
+
+        UnknownServiceException: CLEARTEXT communication to ... not permitted
+
+    這樣設計是對的 —— 使用者的聊天內容不該用明文送出去。
+
+    ## 這裡的取捨
+
+    - `base-config` 保持 `cleartextTrafficPermitted="false"`：
+      所有外部連線（包含 DeepSeek API）一律強制 HTTPS，安全性不變。
+    - 只對**本機位址**開放明文：127.0.0.1 / localhost / 10.0.2.2。
+
+    為什麼要對本機開放？因為開發與測試時會用 `tools/mock_translate_server.py`
+    跑一個本機 mock 伺服器（配合 `adb reverse`），
+    這樣可以在不花錢、不動用真實 API Key 的情況下驗證整條翻譯流程。
+
+    本機位址的明文連線不會離開裝置，所以沒有實際的隱私風險。
+    若你完全不需要本機測試，可以把 domain-config 整段刪掉，功能不受影響。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <!-- Android 模擬器連到宿主機的固定位址 -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

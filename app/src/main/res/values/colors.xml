@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_primary">#FF3D5AFE</color>
+    <!-- 懸浮球：關閉時是品牌藍，開啟即時翻譯時變綠色（一眼看出狀態） -->
+    <color name="bubble_idle">#FF3D5AFE</color>
+    <color name="bubble_active">#FF00C853</color>
+    <color name="bubble_idle_ring">#33000000</color>
+    <color name="brand_primary_dark">#FF1A237E</color>
+    <color name="ic_launcher_background">#FF1A237E</color>
+
+    <!-- 懸浮面板配色 -->
+    <color name="panel_background">#F2181B22</color>
+    <color name="panel_stroke">#33FFFFFF</color>
+    <color name="panel_title">#FFFFFFFF</color>
+    <color name="panel_label">#99FFFFFF</color>
+    <color name="panel_body">#FFEDEFF5</color>
+    <color name="panel_source">#FFB9C2D8</color>
+    <color name="panel_accent">#FF7C9CFF</color>
+    <color name="panel_button">#1FFFFFFF</color>
+    <color name="panel_button_pressed">#3DFFFFFF</color>
+    <color name="panel_badge">#FFFF5252</color>
+</resources>

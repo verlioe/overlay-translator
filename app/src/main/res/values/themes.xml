@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        刻意使用「框架內建」主題而非 Material Components 主題：
+        主畫面由 Compose 自己負責外觀，這裡只需要一個 NoActionBar 的容器，
+        這樣就不必多引入 com.google.android.material 依賴。
+    -->
+    <style name="Theme.OverlayTranslator" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/brand_primary_dark</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
