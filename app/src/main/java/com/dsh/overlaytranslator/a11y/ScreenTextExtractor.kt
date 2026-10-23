@@ -320,6 +320,9 @@ object ScreenTextExtractor {
         for (line in rawLines) {
             if (isChrome(line)) continue
             if (line.text == composerText) continue
+            // 整則訊息已經捲出畫面（完全在上面或完全在下面）就不要留圓點。
+            // 不然圓點會被擺到畫面邊緣，看起來像「滑過去的都積在下面」。
+            if (line.bounds.bottom <= 0 || line.bounds.top >= screenBottom) continue
             if (cutBelowComposer) {
                 val top = composerTop!!
                 // ① 從輸入框上緣（再往上留一點）開始的整條都是介面

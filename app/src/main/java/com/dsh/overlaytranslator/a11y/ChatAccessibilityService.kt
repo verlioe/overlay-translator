@@ -32,6 +32,9 @@ class ChatAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     private val captureRunnable = Runnable { captureNow() }
 
+    /** 捲動停止後把旗標清掉（見 [A11yBridge.scrollingRecently]）。 */
+    private val scrollIdleRunnable = Runnable { A11yBridge.scrollingRecently = false }
+
     private var pendingPackage: String? = null
     private var pendingSince = 0L
 
@@ -76,6 +79,17 @@ class ChatAccessibilityService : AccessibilityService() {
         if (sourcePackage in IGNORED_PACKAGES) return
         if (!isWatched(sourcePackage)) return
 
+        // 捲動事件用比較短的等待：450ms 會讓圓點明顯落後手指，而且捲動中的事件
+        // 會一直把計時器往後推（最多 2 秒）。120ms 已經足夠避開「動畫中途」的殘缺節點。
+        // 捲動期間另外把 [A11yBridge.scrollingRecently] 設起來，讓懸浮層不要在這段時間
+        // 開始新的翻譯（快速滑過十幾則訊息不該燒十幾次 API）。
+        val isScroll = safeEvent.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED
+        if (isScroll) {
+            A11yBridge.scrollingRecently = true
+            handler.removeCallbacks(scrollIdleRunnable)
+            handler.postDelayed(scrollIdleRunnable, SCROLL_IDLE_MS)
+        }
+
         val now = SystemClock.uptimeMillis()
         if (pendingPackage != sourcePackage) {
             // 換 App 的瞬間先把懸浮層清乾淨，不要等去抖動。
@@ -94,7 +108,11 @@ class ChatAccessibilityService : AccessibilityService() {
 
         handler.removeCallbacks(captureRunnable)
         val waited = now - pendingSince
-        val delay = if (waited >= MAX_SETTLE_MS) 0L else SETTLE_DELAY_MS
+        val delay = when {
+            isScroll -> SCROLL_SETTLE_DELAY_MS
+            waited >= MAX_SETTLE_MS -> 0L
+            else -> SETTLE_DELAY_MS
+        }
         handler.postDelayed(captureRunnable, delay)
     }
 
@@ -320,6 +338,12 @@ class ChatAccessibilityService : AccessibilityService() {
 
         /** 畫面安靜多久之後才真的截圖。 */
         private const val SETTLE_DELAY_MS = 450L
+
+    /** 捲動中的去抖動：短一點，圓點才追得上手指。 */
+    private const val SCROLL_SETTLE_DELAY_MS = 120L
+
+    /** 捲動事件停止多久之後算「手停了」，可以開始翻譯。 */
+    private const val SCROLL_IDLE_MS = 450L
 
         /** 不論如何，最多等這麼久就一定截一次。 */
         private const val MAX_SETTLE_MS = 2000L

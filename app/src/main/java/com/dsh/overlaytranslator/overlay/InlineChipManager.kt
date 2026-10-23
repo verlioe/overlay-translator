@@ -1553,7 +1553,10 @@ class InlineChipManager(
         private const val MAX_CHIP_SCREEN_FRACTION = 0.62f
 
         /** 捲動時先保留一下再清掉，避免譯文閃爍。 */
-        private const val SWEEP_DELAY_MS = 1200L
+        // 每次 render 之後多久收掉「這次沒看到」的圓點。
+    // 原本 1200ms 太長：捲動時新圓點一直出現、舊的一直留著，看起來像「積在畫面上」。
+    // 350ms 足夠蓋掉一次短暫的空快照，又不會讓人看到殘留。
+    private const val SWEEP_DELAY_MS = 350L
 
         /** 譯文 chip 的底色（帶透明才看得到底下的聊天內容）。 */
         private const val ACCENT_FILL = 0xF2181B22.toInt()

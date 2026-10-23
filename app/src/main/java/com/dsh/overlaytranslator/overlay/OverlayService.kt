@@ -809,7 +809,11 @@ class OverlayService : Service(), OverlayPanelListener {
             }
 
             // 即時翻譯模式：看到新句子就直接翻，不必一句一句點
-            if (result == null && !failed && !inlineInFlight.contains(key)) {
+            // 捲動中先不要開新的翻譯：快速滑過十幾則訊息時，每一則都送 API 會很貴。
+            // 手停下來（450ms 沒有捲動事件）之後的那次 render 會把它們補上。
+            if (result == null && !failed && !inlineInFlight.contains(key) &&
+                !A11yBridge.scrollingRecently
+            ) {
                 startInlineTranslation(key, line.text, Direction.THEIR_TEXT_TO_ME, packageName)
             }
         }

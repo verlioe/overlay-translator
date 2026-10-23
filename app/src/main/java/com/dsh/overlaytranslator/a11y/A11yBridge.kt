@@ -16,6 +16,17 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 object A11yBridge {
 
+    /**
+     * 使用者「最近正在捲動」畫面。
+     *
+     * 懸浮層據此**延後開始新的翻譯**：快速滑過十幾則訊息時，如果每一則都立刻送 API，
+     * 一次滑動就會燒掉十幾次呼叫。等手停下來（捲動事件停止 450ms）再翻就好。
+     * 圓點本身仍然即時更新（那是本機計算，不花錢）。
+     */
+    @Volatile
+    var scrollingRecently: Boolean = false
+
+
     private val _connected = MutableStateFlow(false)
 
     /** 無障礙服務是否已連線。 */
