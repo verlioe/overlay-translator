@@ -226,7 +226,7 @@ class DeepSeekEngine(
         return messages
     }
 
-    private fun systemPrompt(settings: AppSettings, request: TranslationRequest): String {
+    internal fun systemPrompt(settings: AppSettings, request: TranslationRequest): String {
         val myLanguage = settings.myLanguage.ifBlank { AppSettings.DEFAULT_MY_LANGUAGE }
         val genderRule = genderRule(settings.myGender)
         val toneRule = registerRule(settings.tone)
@@ -294,7 +294,7 @@ class DeepSeekEngine(
      * 對熟人每句都加 ครับ/ค่ะ，泰國人聽起來就是客氣到很假；反過來對長輩不加也很失禮。
      * 這件事只有使用者知道，所以做成設定；留空則讓模型從上下文（對方怎麼講話）判斷。
      */
-    private fun registerRule(tone: String): String = when (tone.trim()) {
+    internal fun registerRule(tone: String): String = when (tone.trim()) {
         AppSettings.TONE_CASUAL ->
             "使用者跟對方是**熟人、可以打鬧**。請完全用朋友之間的講法：" +
                 "泰文的句尾助詞用 นะ／สิ／ดิ／อ่ะ／จ้า／ป่ะ 這類，" +

@@ -56,3 +56,56 @@ jobs:
           name: test-reports
           path: app/build/reports/tests/
           if-no-files-found: warn
+
+  eval:
+    name: Prompt contract (offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install SDK platform
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platforms;android-37" "build-tools;37.0.0" || true
+
+      # 用 App 真正的提示詞產生器輸出 prompts.json（不是另外抄一份）
+      - name: Generate prompt snapshot
+        run: |
+          ./gradlew :app:testDebugUnitTest \
+            --tests com.dsh.overlaytranslator.PromptSnapshotTest --console=plain
+
+      - name: Offline contract check
+        run: python3 tools/eval_prompts.py --check
+
+      - name: Live check (only when an API key is configured)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          EVAL_API_KEY: ${{ secrets.EVAL_API_KEY }}
+          EVAL_BASE_URL: ${{ vars.EVAL_BASE_URL }}
+          EVAL_MODEL: ${{ vars.EVAL_MODEL }}
+        run: |
+          if [ -z "$EVAL_API_KEY" ]; then
+            echo "沒有設定 EVAL_API_KEY secret，跳過實際呼叫模型的檢查。"
+            exit 0
+          fi
+          python3 tools/eval_prompts.py --live --api-key "$EVAL_API_KEY" \
+            --base-url "${EVAL_BASE_URL:-https://api.deepseek.com}" \
+            --model "${EVAL_MODEL:-deepseek-flash}"
+
+      - name: Upload prompt snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-snapshot
+          path: app/build/eval/prompts.json
+          if-no-files-found: warn
