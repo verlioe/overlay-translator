@@ -78,6 +78,13 @@ object ScreenTextExtractor {
         Regex("^\\d{4}年\\d{1,2}月\\d{1,2}日$"),
         Regex("^\\d{1,2}月\\d{1,2}日$"),
         Regex("(?i)^(today|yesterday|昨天|今天|前天|明天)$"),
+        // 英文的「相對時間」狀態列（Messenger：「Delivered 10 minutes ago」「Sent 2 hours ago」）
+        Regex("(?i)^(delivered|sent|read|seen|received|sending)?\\s*" +
+            "\\d+\\s*(sec|secs|second|seconds|min|mins|minute|minutes|" +
+            "hr|hrs|hour|hours|day|days|week|weeks|month|months|year|years)\\s+ago$"),
+        Regex("(?i)^(just|right)\\s+now$"),
+        // 中文／日文的「已送達 10 分鐘前」這種帶前綴的相對時間
+        Regex("^(已送達|已送出|已讀|送達|送出)?\\s*\\d+\\s*(秒前|分鐘前|小時前|天前|週前|個月前)$"),
         Regex("(?i)^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$"),
         Regex("^(週|星期|禮拜)[一二三四五六日天]$"),
     )

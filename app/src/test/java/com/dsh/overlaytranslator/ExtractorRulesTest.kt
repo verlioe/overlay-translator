@@ -113,6 +113,19 @@ class ExtractorRulesTest {
         assertTrue(ScreenTextExtractor.isChrome(line("雙擊可查看傳送/接收的日期和時間")))
     }
 
+    /** Messenger 的「Delivered 10 minutes ago」被當成訊息抓出來過（實機回報）。 */
+    @Test
+    fun `relative time status lines are chrome`() {
+        assertTrue(ScreenTextExtractor.isChrome(line("Delivered 10 minutes ago")))
+        assertTrue(ScreenTextExtractor.isChrome(line("Sent 2 hours ago")))
+        assertTrue(ScreenTextExtractor.isChrome(line("Seen 5 minutes ago")))
+        assertTrue(ScreenTextExtractor.isChrome(line("just now")))
+        assertTrue(ScreenTextExtractor.isChrome(line("已送達 10 分鐘前")))
+        // 但真正的訊息不能被誤殺
+        assertFalse(ScreenTextExtractor.isChrome(line("I delivered it 10 minutes ago")))
+        assertFalse(ScreenTextExtractor.isChrome(line("再 10 分鐘前就到")))
+    }
+
     @Test
     fun `date separators are chrome`() {
         assertTrue(ScreenTextExtractor.isChrome(line("October 15")))
