@@ -22,14 +22,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      # The project pins compileSdk 37; make sure that platform is present even if
-      # it is not part of the runner image yet.
+      # 不靠 android-actions/setup-android（實際跑起來會失敗）；直接用 runner 內建的 SDK。
+      # 專案使用 compileSdk 37，若映像檔還沒有就補裝。
       - name: Install SDK platform
         run: |
-          sdkmanager --install "platforms;android-37" >/dev/null || sdkmanager "platforms;android-37"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          echo "sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platforms;android-37" "build-tools;37.0.0" || true
+          echo "--- installed platforms ---"
+          ls "$ANDROID_HOME/platforms" 2>/dev/null || true
 
       - name: Unit tests
         run: ./gradlew test --console=plain --stacktrace
