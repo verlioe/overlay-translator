@@ -66,7 +66,7 @@ object LanguageDetector {
         // ① 專屬字母。只挑「幾乎只有那個語言在用」的，避免把法文的 ê 當成越南文。
         val byLetter = listOf(
             "越南文" to "ăâđơưạảấầẩẫậắằẳẵặếềểễệốồổỗộớờởỡợụủứừửữựỳỵỷỹ",
-            "土耳其文" to "ğış",
+            "土耳其文" to "ğışİı",   // İ／ı 是土耳其文專屬（Ğ 大寫也算）
             "波蘭文" to "łąężźćń",
             "捷克文" to "řěů",
             "德文" to "ß",
@@ -75,7 +75,9 @@ object LanguageDetector {
             "北歐語言" to "øåæ",
         )
         byLetter.forEach { (language, letters) ->
-            if (t.any { it.lowercaseChar() in letters }) return language
+            // 同時比對「原字元」與「小寫」：土耳其文的 İ 小寫會變成 ASCII 的 i（不是 ı），
+            // 只比小寫就永遠命不中 İ。
+            if (t.any { it in letters || it.lowercaseChar() in letters }) return language
         }
 
         // ② 常用詞（用字邊界比對，避免 "no" 命中 "now"）。

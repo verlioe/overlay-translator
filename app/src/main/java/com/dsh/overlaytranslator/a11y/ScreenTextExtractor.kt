@@ -412,7 +412,7 @@ object ScreenTextExtractor {
      *
      * 其他 App 的訊息節點本來就回報得很精準，這裡一律回 [DotEdge.AUTO] 不做任何事。
      */
-    private fun dotEdgeFor(line: CapturedLine, screenWidth: Int): DotEdge {
+    internal fun dotEdgeFor(line: CapturedLine, screenWidth: Int): DotEdge {
         if (screenWidth <= 0) return DotEdge.AUTO
         // 只處理「幾乎佔滿整個畫面寬度」的節點
         if (line.bounds.width < screenWidth * 0.91f) return DotEdge.AUTO
@@ -440,7 +440,7 @@ object ScreenTextExtractor {
      *
      * @return 剪完的文字（可能與原本相同）
      */
-    private fun stripUiNoise(text: String): String {
+    internal fun stripUiNoise(text: String): String {
         // ① 先砍掉最後一行的「時間＋狀態」列
         var working = text
         val rawRows = working.split('\n')
@@ -468,7 +468,7 @@ object ScreenTextExtractor {
         return result.ifEmpty { text }
     }
 
-    private fun isChrome(line: CapturedLine): Boolean {
+    internal fun isChrome(line: CapturedLine): Boolean {
         val text = line.text
         if (text.isEmpty()) return true
         if (text.length > MAX_TEXT_LENGTH) return true
@@ -497,10 +497,26 @@ object ScreenTextExtractor {
         return false
     }
 
-    /** 粗略判斷有沒有 emoji（emoji 單獨一則是很常見的訊息，不能當成裝飾符號濾掉）。 */
-    private fun looksLikeEmoji(text: String): Boolean = text.any { ch ->
-        val c = ch.code
-        c in 0x1F000..0x1FAFF || c in 0x2600..0x27BF || c in 0x2B00..0x2BFF ||
-            c == 0xFE0F || c == 0x200D || c in 0x1F1E6..0x1F1FF
+    /**
+     * 粗略判斷有沒有 emoji（emoji 單獨一則是很常見的訊息，不能當成裝飾符號濾掉）。
+     *
+     * ⚠️ 必須逐**碼點**比對，不能逐 `Char`：絕大多數 emoji 在補充平面（例如 😊 = U+1F60A），
+     * 在 UTF-16 裡是 surrogate pair，逐 Char 只會看到 0xD83D / 0xDE0A —— 兩個都不在
+     * 0x1F000..0x1FAFF 裡，於是這個函式永遠回 false，emoji-only 訊息會被當裝飾濾掉。
+     * （單元測試 `numbers and emoji only messages are not chrome` 抓到的真 bug。）
+     */
+    private fun looksLikeEmoji(text: String): Boolean {
+        var i = 0
+        while (i < text.length) {
+            val c = text.codePointAt(i)
+            if (
+                c in 0x1F000..0x1FAFF || c in 0x2600..0x27BF || c in 0x2B00..0x2BFF ||
+                c in 0x1F1E6..0x1F1FF || c == 0xFE0F || c == 0x200D
+            ) {
+                return true
+            }
+            i += Character.charCount(c)
+        }
+        return false
     }
 }

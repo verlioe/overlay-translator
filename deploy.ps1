@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     安裝 APK 到裝置，並自動重新啟用無障礙服務。
