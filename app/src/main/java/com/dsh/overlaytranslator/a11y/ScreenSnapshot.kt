@@ -56,6 +56,47 @@ data class CapturedLine(
  * @param composerText   輸入框裡目前打的字，null 代表畫面上沒有輸入框
  * @param composerBounds 輸入框在螢幕上的位置（內嵌模式的「翻譯我的輸入」要貼在它上方）
  */
+/**
+ * 這個套件是「系統畫布」嗎？（桌面、系統 UI、設定、權限對話框…）
+ *
+ * 這些畫面一定會被抓到一堆文字（實測桌面抓到 12 行：App 名稱、時鐘…），
+ * 但**不可能是聊天**。使用者的描述是「換畫面圓點不會不見」——
+ * 實際上是圓點在桌面／系統畫面上被長出來。
+ *
+ * 這裡只列「絕對不可能是聊天」的系統套件；第三方 App 一律不動，
+ * 免得像 Messenger 這種輸入框不是 EditText（Compose 寫的）的 App 被誤殺。
+ */
+private fun isSystemSurface(packageName: String): Boolean {
+    val p = packageName.lowercase()
+    return p == "android" ||
+        p.contains("launcher") ||
+        p.contains("systemui") ||
+        p.contains("permissioncontroller") ||
+        p.startsWith("com.android.settings") ||
+        p.startsWith("com.android.systemui")
+}
+
+/**
+ * 這張快照看起來像「聊天畫面」嗎？
+ *
+ * 判斷順序：
+ *  1. 系統畫布（桌面／系統 UI／設定）→ 一定不是。
+ *  2. 有輸入框 → 是（幾乎所有聊天 App 都有）。
+ *  3. 有「整列」型訊息 → 是（Telegram 把整則訊息回報成滿版節點）。
+ *  4. 其他情況（例如 Compose 寫的 Messenger，輸入框不是 EditText）：
+ *     只要擷取到 ≥2 行有座標的內容，就照舊顯示 —— 這是改動前的行為，不算退步。
+ */
+fun ScreenSnapshot.looksLikeChatScreen(screenWidth: Int): Boolean {
+    if (isSystemSurface(packageName)) return false
+    if (composerBounds?.isValid == true) return true
+    if (screenWidth > 0 &&
+        incoming.any { it.bounds.isValid && it.bounds.width >= screenWidth * 0.91f }
+    ) {
+        return true
+    }
+    return incoming.count { it.bounds.isValid } >= 2
+}
+
 data class ScreenSnapshot(
     val packageName: String,
     val capturedAt: Long,

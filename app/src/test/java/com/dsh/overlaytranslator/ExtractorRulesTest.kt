@@ -3,7 +3,9 @@ package com.dsh.overlaytranslator
 import com.dsh.overlaytranslator.a11y.Bounds
 import com.dsh.overlaytranslator.a11y.CapturedLine
 import com.dsh.overlaytranslator.a11y.DotEdge
+import com.dsh.overlaytranslator.a11y.ScreenSnapshot
 import com.dsh.overlaytranslator.a11y.ScreenTextExtractor
+import com.dsh.overlaytranslator.a11y.looksLikeChatScreen
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -163,6 +165,65 @@ class ExtractorRulesTest {
         assertTrue(ScreenTextExtractor.isChrome(line("字".repeat(5000))))
     }
 
+    // ──────────────────── looksLikeChatScreen ────────────────────
+
+    /** 桌面上會被抓到一堆文字，但那裡不該長出圓點。 */
+    @Test
+    fun `launcher-like screen is not a chat`() {
+        val snapshot = ScreenSnapshot(
+            packageName = "com.android.launcher",
+            capturedAt = 0L,
+            incoming = listOf(
+                CapturedLine(text = "相機", bounds = Bounds(40, 600, 300, 700)),
+                CapturedLine(text = "設定", bounds = Bounds(40, 900, 300, 1000)),
+                CapturedLine(text = "12:34", bounds = Bounds(600, 60, 760, 120)),
+            ),
+            composerText = "",
+            composerBounds = null,
+        )
+        assertFalse(snapshot.looksLikeChatScreen(1280))
+    }
+
+    /** 有輸入框 → 聊天畫面（Messenger 這種）。 */
+    @Test
+    fun `screen with a composer is a chat`() {
+        val snapshot = ScreenSnapshot(
+            packageName = "com.facebook.orca",
+            capturedAt = 0L,
+            incoming = listOf(CapturedLine(text = "嗨", bounds = Bounds(40, 600, 400, 700))),
+            composerText = "",
+            composerBounds = Bounds(200, 2468, 926, 2608),
+        )
+        assertTrue(snapshot.looksLikeChatScreen(1280))
+    }
+
+    /** 沒有輸入框，但有「整列」訊息 → 聊天畫面（Telegram 這種）。 */
+    @Test
+    fun `screen with full width rows is a chat`() {
+        val snapshot = ScreenSnapshot(
+            packageName = "org.telegram.messenger",
+            capturedAt = 0L,
+            incoming = listOf(
+                CapturedLine(text = "謝謝寶\nReceived at 15:29", bounds = Bounds(0, 400, 1280, 530)),
+            ),
+            composerText = "",
+            composerBounds = null,
+        )
+        assertTrue(snapshot.looksLikeChatScreen(1280))
+    }
+
+    /** 空的聊天室（有輸入框但沒有訊息）仍然算聊天畫面 —— 圓點交給 sweep 收。 */
+    @Test
+    fun `empty chat with composer counts as a chat`() {
+        val snapshot = ScreenSnapshot(
+            packageName = "org.telegram.messenger",
+            capturedAt = 0L,
+            incoming = emptyList(),
+            composerText = "",
+            composerBounds = Bounds(200, 2468, 926, 2608),
+        )
+        assertTrue(snapshot.looksLikeChatScreen(1280))
+    }
     // ───────────────────────── 邊界 ─────────────────────────
 
     @Test

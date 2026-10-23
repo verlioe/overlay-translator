@@ -25,6 +25,7 @@ import com.dsh.overlaytranslator.a11y.A11yActions
 import com.dsh.overlaytranslator.a11y.A11yBridge
 import com.dsh.overlaytranslator.a11y.Bounds
 import com.dsh.overlaytranslator.a11y.ScreenSnapshot
+import com.dsh.overlaytranslator.a11y.looksLikeChatScreen
 import com.dsh.overlaytranslator.core.AppLog
 import com.dsh.overlaytranslator.core.AppSettings
 import com.dsh.overlaytranslator.core.DisplayMode
@@ -718,6 +719,18 @@ class OverlayService : Service(), OverlayPanelListener {
             composerShowDiagnosis = false
             composerWindowDismissedFor = null
             panelView.setBadge(false)
+            return
+        }
+
+        // 不是聊天畫面（桌面、設定、相簿…）就什麼都不顯示。
+        // 桌面會被擷取到一堆文字（實測 12 行），以前會在那裡長出圓點 ——
+        // 使用者的描述是「換畫面圓點不會不見」。懸浮球本身不受影響。
+        if (!snapshot.looksLikeChatScreen(screen.x)) {
+            if (chipManager.activeKeys.isNotEmpty()) chipManager.hideAll()
+            openMessageKey = null
+            composerShowDiagnosis = false
+            composerWindowDismissedFor = null
+            chipManager.setObstacles(emptyList())
             return
         }
 
