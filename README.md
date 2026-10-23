@@ -1,5 +1,7 @@
 # Overlay Translator 懸浮翻譯
 
+[![CI](https://github.com/verlioe/overlay-translator/actions/workflows/ci.yml/badge.svg)](https://github.com/verlioe/overlay-translator/actions/workflows/ci.yml)
+
 An Android **live translation overlay** for chat apps. It reads the other person's messages through
 an AccessibilityService, translates them with an LLM **together with the conversation context**, and
 can write the translation straight back into the chat input box.
